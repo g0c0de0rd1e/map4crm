@@ -11,9 +11,10 @@
     <div id="map" style="width: 100%; height: 500px;"></div>
     <input type="text" id="address" placeholder="Введите адрес">
     <button onclick="geocode()">Найти</button>
+    <button onclick="saveAddress()">Сохранить адрес</button>
 
     <script>
-        var map = L.map('map').setView([44.952117, 34.102417], 10); // Центр карты в Крыму
+        var map = L.map('map').setView([44.952117, 34.102417], 10); 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
@@ -28,9 +29,9 @@
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data.display_name); // Вывод адреса в консоль
+                    console.log(data.display_name); 
                     marker.bindPopup(data.display_name).openPopup();
-                    sendJson({lat: e.latlng.lat, lon: e.latlng.lng, address: data.display_name});
+                    document.getElementById('address').value = data.display_name;
                 });
         });
 
@@ -46,26 +47,29 @@
                     marker = L.marker(latlng).addTo(map);
                     map.setView(latlng, 13);
                     marker.bindPopup(data[0].display_name).openPopup();
-                    sendJson({lat: data[0].lat, lon: data[0].lon, address: data[0].display_name});
                 });
         }
 
-        function sendJson(data) {
-            fetch('/save-location', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+        function saveAddress() {
+            var address = document.getElementById('address').value;
+            if (marker) {
+                var latlng = marker.getLatLng();
+                fetch('/save-address', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({address: address, lat: latlng.lat, lon: latlng.lon})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Address saved:', data);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            }
         }
     </script>
 </body>
