@@ -43,7 +43,26 @@ class MapController extends Controller
     
             return response()->json(['message' => 'Error saving address'], 500);
         }
-    }    
+    }
+    
+    public function getUserAddresses()
+    {
+        $addresses = Delivery::where('user_id', auth()->id())->get();
+        return response()->json($addresses);
+    }
+
+    public function updateAddressStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|string|in:in_process,on_the_way,received',
+        ]);
+
+        $address = Delivery::find($id);
+        $address->status = $request->status;
+        $address->save();
+
+        return response()->json(['success' => true, 'address' => $address]);
+    }
 
     public function confirmOrder(Request $request)
     {
@@ -101,7 +120,7 @@ class MapController extends Controller
 
     public function getOrders()
     {
-        $orders = Delivery::all();
+        $orders = Delivery::where('user_id', auth()->id())->get();
         return response()->json($orders);
     }
 

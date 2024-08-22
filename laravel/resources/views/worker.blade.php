@@ -6,14 +6,25 @@
     <title>Orders Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        .order-column, .address-column {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .address-column {
+            max-width: 300px;
+        }
+        .btn {
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Orders Management</h1>
         <div class="row">
             <div class="col">
                 <h2>В обработке</h2>
-                <div id="in_process" class="order-column"></div>
+                <div id="user_addresses" class="order-column"></div>
             </div>
             <div class="col">
                 <h2>В пути</h2>
@@ -24,50 +35,35 @@
                 <div id="received" class="order-column"></div>
             </div>
         </div>
+        <!-- <div class="row mt-4">
+            <div class="col">
+                <h2>Адреса пользователя</h2>
+                <div id="user_addresses" class="address-column"></div>
+            </div>
+        </div> -->
     </div>
 
     <script>
-        function fetchOrders() {
-            $.get('/get-orders', function(data) {
-                displayOrders(data);
+        function fetchUserAddresses() {
+            $.get('/user-addresses', function(data) {
+                displayAddresses(data);
             });
         }
 
-        function displayOrders(orders) {
-            $('#in_process').empty();
-            $('#on_the_way').empty();
-            $('#received').empty();
+        function displayAddresses(addresses) {
+            $('#user_addresses').empty();
 
-            orders.forEach(order => {
-                var orderDiv = `
+            addresses.forEach(address => {
+                var addressDiv = `
                     <div class="card mb-2">
                         <div class="card-body">
-                            <p>Заказ ID: ${order.id}</p>
-                            <p>Адрес: ${order.address}</p>
-                            <p>Статус: ${order.status}</p>
-                            ${order.status !== 'received' ? `<button class="btn btn-primary" onclick="updateOrderStatus(${order.id}, '${getNextStatus(order.status)}')">Переместить в ${getNextStatus(order.status)}</button>` : ''}
+                            <p>Адрес: ${address.address}</p>
+                            <p>Широта: ${address.lat}</p>
+                            <p>Долгота: ${address.lng}</p>
                         </div>
                     </div>
                 `;
-                $(`#${order.status}`).append(orderDiv);
-            });
-        }
-
-        function getNextStatus(currentStatus) {
-            if (currentStatus === 'in_process') return 'on_the_way';
-            if (currentStatus === 'on_the_way') return 'received';
-            return '';
-        }
-
-        function updateOrderStatus(id, status) {
-            $.post(`/update-order-status/${id}`, {
-                _token: '{{ csrf_token() }}',
-                status: status
-            }, function(data) {
-                fetchOrders();
-                if (status === 'on_the_way') {
-                    updateMapWithDeliveryMarker(id);
-                }
+                $('#user_addresses').append(addressDiv);
             });
         }
 
@@ -95,8 +91,8 @@
         }
 
         $(document).ready(function() {
-            fetchOrders();
-            setInterval(fetchOrders, 5000); // Обновление каждые 5 секунд
+            fetchUserAddresses();
+            setInterval(fetchUserAddresses, 500); // Обновление адресов каждые 5 секунд
         });
     </script>
 </body>

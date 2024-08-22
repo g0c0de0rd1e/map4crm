@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/map', [MapController::class, 'showMap']);
     Route::get('/worker', [MapController::class, 'showWorker']);
     Route::get('/get-orders', [MapController::class, 'getOrders']);
+    Route::get('/user-addresses', [MapController::class, 'getUserAddresses']);
     Route::post('/update-order-status/{id}', [MapController::class, 'updateOrderStatus']);
     Route::get('/get-delivery-coordinates/{id}', [MapController::class, 'getDeliveryCoordinates']);
     // Route::get('/tracker', [MapController::class, 'showTracker']);
