@@ -13,52 +13,49 @@ class MapController extends Controller
         return view('map');
     }
 
-    public function showTracker()
+    public function showWorker()
     {
-        return view('tracker');
+        return view('worker');
     }
     
     public function saveAddress(Request $request)
     {
-        $request->validate([
-            'address' => 'required|string',
-            'lat' => 'required|numeric',
-            'lon' => 'required|numeric',
-        ]);
+        try {
+            // $validatedData = $request->validate([
+            //     'address' => 'required|string|max:255',
+            //     'lat' => 'required|numeric',
+            //     'lng' => 'required|numeric',
+            // ]);
     
-        $data = [
-            'address' => $request->address,
-            'latitude' => $request->lat,
-            'longitude' => $request->lon,
-        ];
+            $delivery = new Delivery();
+            $delivery->user_id = auth()->id();
+            $delivery->address = $request->input('address');
+            $delivery->lat = $request->input('lat');
+            $delivery->lng = $request->input('lng');
+            $delivery->save();
+
+        } catch (\Exception $e) {
+            // Запись ошибки в лог
+            \Log::error('Error saving address: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
+            ]);
     
-        $jsonData = json_encode($data, JSON_PRETTY_PRINT);
-        $filePath = storage_path('app/address.json');
-    
-        \Log::info('Saving address to JSON file', ['filePath' => $filePath, 'data' => $data]);
-    
-        if (file_put_contents($filePath, $jsonData) === false) {
-            \Log::error('Failed to write to JSON file', ['filePath' => $filePath]);
-            return response()->json(['success' => false, 'message' => 'Failed to save address'], 500);
+            return response()->json(['message' => 'Error saving address'], 500);
         }
-    
-        \Log::info('Address saved successfully', ['filePath' => $filePath]);
-    
-        return response()->json(['success' => true, 'address' => $data]);
     }    
-    
 
     public function confirmOrder(Request $request)
     {
         $request->validate([
             'address' => 'required|string',
             'lat' => 'required|numeric',
-            'lon' => 'required|numeric',
+            'lng' => 'required|numeric',
         ]);
         
         $delivery = new Delivery();
         $delivery->latitude = $request->lat;
-        $delivery->longitude = $request->lon;
+        $delivery->longitude = $request->lng;
         $delivery->user_id = auth()->id(); 
         $delivery->save();
 
@@ -69,7 +66,7 @@ class MapController extends Controller
             'deliveryId' => $delivery->id,
             'userLocation' => [
                 'lat' => $userAddress->latitude,
-                'lon' => $userAddress->longitude
+                'lng' => $userAddress->longitude
             ]
         ]);
     }
@@ -80,7 +77,7 @@ class MapController extends Controller
 
         return response()->json([
             'lat' => $delivery->latitude,
-            'lon' => $delivery->longitude
+            'lng' => $delivery->longitude
         ]);
     }
 
@@ -98,7 +95,32 @@ class MapController extends Controller
 
         return response()->json([
             'lat' => $userAddress->latitude,
-            'lon' => $userAddress->longitude
+            'lng' => $userAddress->longitude
         ]);
+    }
+
+    public function getOrders()
+    {
+        $orders = Delivery::all();
+        return response()->json($orders);
+    }
+
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|string|in:in_process,on_the_way,received',
+        ]);
+
+        $delivery = Delivery::find($id);
+        $delivery->status = $request->status;
+        $delivery->save();
+
+        return response()->json(['success' => true, 'delivery' => $delivery]);
+    }
+
+    public function getDeliveryCoordinates($id)
+    {
+        $delivery = Delivery::find($id);
+        return response()->json(['latitude' => $delivery->latitude, 'longitude' => $delivery->longitude]);
     }
 }

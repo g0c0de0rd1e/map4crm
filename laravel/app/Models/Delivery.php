@@ -9,5 +9,5 @@ class Delivery extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['latitude', 'longitude', 'user_id'];
+    protected $fillable = ['address', 'lat', 'lng'];
 }

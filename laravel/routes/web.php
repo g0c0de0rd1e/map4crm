@@ -1,11 +1,28 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MapController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/map', [MapController::class, 'showMap']);
-Route::get('/tracker', [MapController::class, 'showTracker']);
-Route::post('/save-address', [MapController::class, 'saveAddress']);
-Route::post('/confirm-order', [MapController::class, 'confirmOrder']);
-Route::get('/delivery-location/{id}', [MapController::class, 'getDeliveryLocation']);
-Route::get('/get-user-location', [MapController::class, 'getUserLocation']);
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/map', [MapController::class, 'showMap']);
+    Route::get('/worker', [MapController::class, 'showWorker']);
+    Route::get('/get-orders', [MapController::class, 'getOrders']);
+    Route::post('/update-order-status/{id}', [MapController::class, 'updateOrderStatus']);
+    Route::get('/get-delivery-coordinates/{id}', [MapController::class, 'getDeliveryCoordinates']);
+    // Route::get('/tracker', [MapController::class, 'showTracker']);
+    Route::post('/save-address', [MapController::class, 'saveAddress']);
+    Route::post('/confirm-order', [MapController::class, 'confirmOrder']);
+    Route::get('/delivery-location/{id}', [MapController::class, 'getDeliveryLocation']);
+    Route::get('/get-user-location', [MapController::class, 'getUserLocation']);
+});
+
+require __DIR__.'/auth.php';

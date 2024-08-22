@@ -10,12 +10,10 @@ class CreateDeliveriesTable extends Migration
     {
         Schema::create('deliveries', function (Blueprint $table) {
             $table->id();
-            $table->decimal('latitude', 10, 7);
-            $table->decimal('longitude', 10, 7);
-            $table->unsignedBigInteger('user_id');
+            $table->string('address');
+            $table->decimal('lat', 10, 7);
+            $table->decimal('lng', 10, 7);
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

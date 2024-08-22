@@ -6,6 +6,8 @@
     <title>OSM Map with Laravel</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
     <div id="map" style="width: 100%; height: 500px;"></div>
@@ -20,6 +22,8 @@
         }).addTo(map);
 
         var marker;
+        var deliveryMarker;
+        var routingControl;
 
         map.on('click', function(e) {
             if (marker) {
@@ -40,7 +44,7 @@
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${address}`)
                 .then(response => response.json())
                 .then(data => {
-                    var latlng = [data[0].lat, data[0].lon];
+                    var latlng = [data[0].lat, data[0].lng];
                     if (marker) {
                         map.removeLayer(marker);
                     }
@@ -54,23 +58,94 @@
             var address = document.getElementById('address').value;
             if (marker) {
                 var latlng = marker.getLatLng();
-                fetch('/save-address', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({address: address, lat: latlng.lat, lon: latlng.lon})
+                $.post('/save-address', {
+                    _token: '{{ csrf_token() }}',
+                    address: address,
+                    lat: latlng.lat,
+                    lng: latlng.lng // Убедитесь, что это поле передается
                 })
-                .then(response => response.json())
-                .then(data => {
+                .done(function(data) {
                     console.log('Address saved:', data);
+                    fetchOrders(); // Обновление таблицы заказов после сохранения адреса
                 })
-                .catch((error) => {
-                    console.error('Error:', error);
+                .fail(function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error saving address:', textStatus, errorThrown);
+                    console.error('Response:', jqXHR.responseText);
                 });
             }
         }
+
+        function updateMapWithDeliveryMarker(id) {
+            $.get(`/get-delivery-coordinates/${id}`, function(data) {
+                if (deliveryMarker) {
+                    map.removeLayer(deliveryMarker);
+                }
+                deliveryMarker = L.marker([data.latitude, data.longitude]).addTo(map);
+                if (routingControl) {
+                    routingControl.setWaypoints([
+                        L.latLng(data.latitude, data.longitude),
+                        L.latLng(marker.getLatLng().lat, marker.getLatLng().lng)
+                    ]);
+                } else {
+                    routingControl = L.Routing.control({
+                        waypoints: [
+                            L.latLng(data.latitude, data.longitude),
+                            L.latLng(marker.getLatLng().lat, marker.getLatLng().lng)
+                        ],
+                        routeWhileDragging: true
+                    }).addTo(map);
+                }
+            });
+        }
+
+        function fetchOrders() {
+            $.get('/get-orders', function(data) {
+                displayOrders(data);
+            });
+        }
+
+        function displayOrders(orders) {
+            $('#in_process').empty();
+            $('#on_the_way').empty();
+            $('#received').empty();
+
+            orders.forEach(order => {
+                var orderDiv = `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <p>Заказ ID: ${order.id}</p>
+                            <p>Адрес: ${order.address}</p>
+                            <p>Статус: ${order.status}</p>
+                            ${order.status !== 'received' ? `<button class="btn btn-primary" onclick="updateOrderStatus(${order.id}, '${getNextStatus(order.status)}')">Переместить в ${getNextStatus(order.status)}</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                $(`#${order.status}`).append(orderDiv);
+            });
+        }
+
+        function getNextStatus(currentStatus) {
+            if (currentStatus === 'in_process') return 'on_the_way';
+            if (currentStatus === 'on_the_way') return 'received';
+            return '';
+        }
+
+        function updateOrderStatus(id, status) {
+            $.post(`/update-order-status/${id}`, {
+                _token: '{{ csrf_token() }}',
+                status: status
+            }, function(data) {
+                fetchOrders();
+                if (status === 'on_the_way') {
+                    updateMapWithDeliveryMarker(id);
+                }
+            });
+        }
+
+        $(document).ready(function() {
+            fetchOrders();
+            setInterval(fetchOrders, 5000); // Обновление каждые 5 секунд
+        });
     </script>
 </body>
 </html>
