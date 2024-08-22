@@ -8,4 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class Delivery extends Model
 {
     use HasFactory;
+
+    protected $fillable = ['latitude', 'longitude', 'user_id'];
 }

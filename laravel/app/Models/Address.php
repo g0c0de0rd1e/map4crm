@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Delivery extends Model
+class Address extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['latitude', 'longitude', 'user_id'];
+    protected $fillable = ['address', 'latitude', 'longitude', 'user_id'];
 }
