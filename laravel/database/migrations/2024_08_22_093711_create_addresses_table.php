@@ -14,6 +14,7 @@ class CreateAddressesTable extends Migration
             $table->decimal('latitude', 10, 7);
             $table->decimal('longitude', 10, 7);
             $table->unsignedBigInteger('user_id');
+            $table->enum('status', ['in_process', 'on_the_way', 'received']);
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
