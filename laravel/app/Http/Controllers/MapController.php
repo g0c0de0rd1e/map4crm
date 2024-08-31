@@ -132,9 +132,25 @@ class MapController extends Controller
         return response()->json(['success' => true, 'delivery' => $delivery]);
     }
 
+    public function saveCourierCoordinates(Request $request)
+    {
+        $request->validate([
+            'orderId' => 'required|integer',
+            'lat' => 'required|numeric',
+            'lng' => 'required|numeric',
+        ]);
+    
+        $delivery = Delivery::find($request->orderId);
+        $delivery->lat = $request->lat;
+        $delivery->lng = $request->lng;
+        $delivery->save();
+    
+        return response()->json(['success' => true, 'delivery' => $delivery]);
+    }
+    
     public function getDeliveryCoordinates($id)
     {
         $delivery = Delivery::find($id);
-        return response()->json(['latitude' => $delivery->latitude, 'longitude' => $delivery->longitude]);
+        return response()->json(['latitude' => $delivery->lat, 'longitude' => $delivery->lng]);
     }
 }

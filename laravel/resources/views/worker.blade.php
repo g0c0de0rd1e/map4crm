@@ -19,6 +19,7 @@
             margin-top: 10px;
         }
     </style>
+    <input type="hidden" id="orderId" value="">
     <script>
         $.ajaxSetup({
             headers: {
@@ -30,6 +31,20 @@
             $.get('/get-orders', function(data) {
                 displayOrders(data);
             });
+        }
+        
+        function getCourierLocation(callback) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    callback(position.coords.latitude, position.coords.longitude);
+                }, function(error) {
+                    console.error('Error getting location:', error);
+                    callback(null, null);
+                });
+            } else {
+                console.error('Geolocation is not supported by this browser.');
+                callback(null, null);
+            }
         }
 
         function displayOrders(orders) {
@@ -53,6 +68,52 @@
                     </div>
                 `;
                 $(`#${order.status}`).append(orderDiv);
+
+                if (order.status === 'on_the_way') {
+                    $('#orderId').val(order.id); // Устанавливаем ID заказа, который в пути
+                }
+            });
+        }
+
+        function updateOrderStatus(id, status) {
+            if (status === 'delete') {
+                $.ajax({
+                    url: `/delete-order/${id}`,
+                    type: 'DELETE',
+                    success: function(result) {
+                        fetchOrders();
+                    }
+                });
+            } else {
+                getCourierLocation(function(lat, lng) {
+                    if (lat && lng) {
+                        $.post(`/update-order-status/${id}`, { status: status, lat: lat, lng: lng }, function(data) {
+                            fetchOrders();
+                            if (status === 'on_the_way') {
+                                $('#orderId').val(id); // Устанавливаем ID заказа
+                                updateMapWithDeliveryMarker(id);
+                            }
+                        });
+                    } else {
+                        console.error('Unable to get courier location.');
+                    }
+                });
+            }
+        }
+
+        function sendCourierCoordinates(orderId, lat, lng) {
+            $.post(`/save-courier-coordinates`, {
+                _token: '{{ csrf_token() }}',
+                orderId: orderId,
+                lat: lat,
+                lng: lng
+            })
+            .done(function(data) {
+                console.log('Courier coordinates saved:', data);
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                console.error('Error saving courier coordinates:', textStatus, errorThrown);
+                console.error('Response:', jqXHR.responseText);
             });
         }
 
@@ -66,22 +127,6 @@
                     return 'delete';
                 default:
                     return 'in_process';
-            }
-        }
-
-        function updateOrderStatus(id, status, lat, lng) {
-            if (status === 'delete') {
-                $.ajax({
-                    url: `/delete-order/${id}`,
-                    type: 'DELETE',
-                    success: function(result) {
-                        fetchOrders();
-                    }
-                });
-            } else {
-                $.post(`/update-order-status/${id}`, { status: status, lat: lat, lng: lng }, function(data) {
-                    fetchOrders();
-                });
             }
         }
 

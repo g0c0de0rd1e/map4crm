@@ -76,6 +76,15 @@
             }
         }
 
+        $(document).ready(function() {
+            setInterval(function() {
+                var orderId = $('#orderId').val();
+                if (orderId) {
+                    updateMapWithDeliveryMarker(orderId);
+                }
+            }, 15000); // Обновление каждые 15 секунд
+        });
+
         function updateMapWithDeliveryMarker(id) {
             $.get(`/get-delivery-coordinates/${id}`, function(data) {
                 if (deliveryMarker) {
@@ -99,9 +108,6 @@
             });
         }
 
-        $(document).ready(function() {
-            setInterval(fetchOrders, 5000); // Обновление каждые 5 секунд
-        });
     </script>
 </body>
 </html>

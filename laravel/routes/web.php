@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
     // Route::get('/tracker', [MapController::class, 'showTracker']);
     Route::post('/save-address', [MapController::class, 'saveAddress']);
     Route::post('/confirm-order', [MapController::class, 'confirmOrder']);
+    Route::post('/save-courier-coordinates', [MapController::class, 'saveCourierCoordinates']);
     Route::get('/delivery-location/{id}', [MapController::class, 'getDeliveryLocation']);
     Route::get('/get-user-location', [MapController::class, 'getUserLocation']);
 });
