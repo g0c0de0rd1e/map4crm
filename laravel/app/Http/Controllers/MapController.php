@@ -21,21 +21,15 @@ class MapController extends Controller
     public function saveAddress(Request $request)
     {
         try {
-            // $validatedData = $request->validate([
-            //     'address' => 'required|string|max:255',
-            //     'lat' => 'required|numeric',
-            //     'lng' => 'required|numeric',
-            // ]);
-    
             $delivery = new Delivery();
             $delivery->user_id = auth()->id();
             $delivery->address = $request->input('address');
             $delivery->lat = $request->input('lat');
             $delivery->lng = $request->input('lng');
+            $delivery->status = $request->input('status'); // Добавлено поле status
             $delivery->save();
 
         } catch (\Exception $e) {
-            // Запись ошибки в лог
             \Log::error('Error saving address: ' . $e->getMessage(), [
                 'exception' => $e,
                 'request' => $request->all()
@@ -76,6 +70,7 @@ class MapController extends Controller
         $delivery->latitude = $request->lat;
         $delivery->longitude = $request->lng;
         $delivery->user_id = auth()->id(); 
+        $delivery->status = $request->input('status'); // Добавлено поле status
         $delivery->save();
 
         $userAddress = Address::where('user_id', auth()->id())->first();
@@ -120,7 +115,7 @@ class MapController extends Controller
 
     public function getOrders()
     {
-        $orders = Delivery::where('user_id', auth()->id())->get();
+        $orders = Delivery::where('user_id', auth()->id())->get()->toArray();
         return response()->json($orders);
     }
 

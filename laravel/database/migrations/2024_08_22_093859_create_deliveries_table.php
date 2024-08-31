@@ -13,6 +13,7 @@ class CreateDeliveriesTable extends Migration
             $table->string('address');
             $table->decimal('lat', 10, 7);
             $table->decimal('lng', 10, 7);
+            $table->enum('status', ['in_process', 'on_the_way', 'received']);
             $table->timestamps();
         });
     }

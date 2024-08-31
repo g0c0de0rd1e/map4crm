@@ -6,8 +6,9 @@
     <title>Orders Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
-        .order-column, .address-column {
+        .order-column {
             max-height: 400px;
             overflow-y: auto;
         }
@@ -18,13 +19,84 @@
             margin-top: 10px;
         }
     </style>
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        function fetchOrders() {
+            $.get('/get-orders', function(data) {
+                displayOrders(data);
+            });
+        }
+
+        function displayOrders(orders) {
+            if (!Array.isArray(orders)) {
+                console.error('Expected an array but got:', orders);
+                return;
+            }
+            $('#in_process').empty();
+            $('#on_the_way').empty();
+            $('#received').empty();
+
+            orders.forEach(order => {
+                var orderDiv = `
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <p>Заказ ID: ${order.id}</p>
+                            <p>Адрес: ${order.address}</p>
+                            <p>Статус: ${order.status}</p>
+                            ${order.status !== 'received' ? `<button class="btn btn-primary" onclick="updateOrderStatus(${order.id}, '${getNextStatus(order.status)}', ${order.lat}, ${order.lng})">Переместить в ${getNextStatus(order.status)}</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                $(`#${order.status}`).append(orderDiv);
+            });
+        }
+
+        function getNextStatus(currentStatus) {
+            switch (currentStatus) {
+                case 'in_process':
+                    return 'on_the_way';
+                case 'on_the_way':
+                    return 'received';
+                case 'received':
+                    return 'delete';
+                default:
+                    return 'in_process';
+            }
+        }
+
+        function updateOrderStatus(id, status, lat, lng) {
+            if (status === 'delete') {
+                $.ajax({
+                    url: `/delete-order/${id}`,
+                    type: 'DELETE',
+                    success: function(result) {
+                        fetchOrders();
+                    }
+                });
+            } else {
+                $.post(`/update-order-status/${id}`, { status: status, lat: lat, lng: lng }, function(data) {
+                    fetchOrders();
+                });
+            }
+        }
+
+        $(document).ready(function() {
+            fetchOrders();
+            setInterval(fetchOrders, 5000); // Обновление заказов каждые 5 секунд
+        });
+    </script>
 </head>
 <body>
     <div class="container">
         <div class="row">
             <div class="col">
                 <h2>В обработке</h2>
-                <div id="user_addresses" class="order-column"></div>
+                <div id="in_process" class="order-column"></div>
             </div>
             <div class="col">
                 <h2>В пути</h2>
@@ -35,65 +107,6 @@
                 <div id="received" class="order-column"></div>
             </div>
         </div>
-        <!-- <div class="row mt-4">
-            <div class="col">
-                <h2>Адреса пользователя</h2>
-                <div id="user_addresses" class="address-column"></div>
-            </div>
-        </div> -->
     </div>
-
-    <script>
-        function fetchUserAddresses() {
-            $.get('/user-addresses', function(data) {
-                displayAddresses(data);
-            });
-        }
-
-        function displayAddresses(addresses) {
-            $('#user_addresses').empty();
-
-            addresses.forEach(address => {
-                var addressDiv = `
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <p>Адрес: ${address.address}</p>
-                            <p>Широта: ${address.lat}</p>
-                            <p>Долгота: ${address.lng}</p>
-                        </div>
-                    </div>
-                `;
-                $('#user_addresses').append(addressDiv);
-            });
-        }
-
-        function updateMapWithDeliveryMarker(id) {
-            $.get(`/get-delivery-coordinates/${id}`, function(data) {
-                if (deliveryMarker) {
-                    map.removeLayer(deliveryMarker);
-                }
-                deliveryMarker = L.marker([data.latitude, data.longitude]).addTo(map);
-                if (routingControl) {
-                    routingControl.setWaypoints([
-                        L.latLng(data.latitude, data.longitude),
-                        L.latLng(marker.getLatLng().lat, marker.getLatLng().lng)
-                    ]);
-                } else {
-                    routingControl = L.Routing.control({
-                        waypoints: [
-                            L.latLng(data.latitude, data.longitude),
-                            L.latLng(marker.getLatLng().lat, marker.getLatLng().lng)
-                        ],
-                        routeWhileDragging: true
-                    }).addTo(map);
-                }
-            });
-        }
-
-        $(document).ready(function() {
-            fetchUserAddresses();
-            setInterval(fetchUserAddresses, 500); // Обновление адресов каждые 5 секунд
-        });
-    </script>
 </body>
 </html>

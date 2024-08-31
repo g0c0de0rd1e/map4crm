@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Models;
+    namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+    use Illuminate\Database\Eloquent\Factories\HasFactory;
+    use Illuminate\Database\Eloquent\Model;
 
-class Delivery extends Model
-{
-    use HasFactory;
+    class Delivery extends Model
+    {
+        use HasFactory;
 
-    protected $fillable = ['address', 'lat', 'lng'];
-}
+        protected $fillable = ['address', 'lat', 'lng', 'status'];
+    }

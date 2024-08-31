@@ -62,7 +62,8 @@
                     _token: '{{ csrf_token() }}',
                     address: address,
                     lat: latlng.lat,
-                    lng: latlng.lng // Убедитесь, что это поле передается
+                    lng: latlng.lng ,
+                    status: 'in_process'
                 })
                 .done(function(data) {
                     console.log('Address saved:', data);
@@ -98,52 +99,7 @@
             });
         }
 
-        function fetchOrders() {
-            $.get('/get-orders', function(data) {
-                displayOrders(data);
-            });
-        }
-
-        function displayOrders(orders) {
-            $('#in_process').empty();
-            $('#on_the_way').empty();
-            $('#received').empty();
-
-            orders.forEach(order => {
-                var orderDiv = `
-                    <div class="card mb-2">
-                        <div class="card-body">
-                            <p>Заказ ID: ${order.id}</p>
-                            <p>Адрес: ${order.address}</p>
-                            <p>Статус: ${order.status}</p>
-                            ${order.status !== 'received' ? `<button class="btn btn-primary" onclick="updateOrderStatus(${order.id}, '${getNextStatus(order.status)}')">Переместить в ${getNextStatus(order.status)}</button>` : ''}
-                        </div>
-                    </div>
-                `;
-                $(`#${order.status}`).append(orderDiv);
-            });
-        }
-
-        function getNextStatus(currentStatus) {
-            if (currentStatus === 'in_process') return 'on_the_way';
-            if (currentStatus === 'on_the_way') return 'received';
-            return '';
-        }
-
-        function updateOrderStatus(id, status) {
-            $.post(`/update-order-status/${id}`, {
-                _token: '{{ csrf_token() }}',
-                status: status
-            }, function(data) {
-                fetchOrders();
-                if (status === 'on_the_way') {
-                    updateMapWithDeliveryMarker(id);
-                }
-            });
-        }
-
         $(document).ready(function() {
-            fetchOrders();
             setInterval(fetchOrders, 5000); // Обновление каждые 5 секунд
         });
     </script>
