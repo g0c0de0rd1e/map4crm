@@ -28,7 +28,9 @@ class MapController extends Controller
             $delivery->lng = $request->input('lng');
             $delivery->status = $request->input('status'); // Добавлено поле status
             $delivery->save();
-
+    
+            return response()->json(['deliveryId' => $delivery->id]);
+    
         } catch (\Exception $e) {
             \Log::error('Error saving address: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -37,6 +39,12 @@ class MapController extends Controller
     
             return response()->json(['message' => 'Error saving address'], 500);
         }
+    }
+    
+    public function showUserMap($id)
+    {
+        $delivery = Delivery::find($id);
+        return view('user_map', ['delivery' => $delivery]);
     }
     
     public function getUserAddresses()
@@ -153,4 +161,4 @@ class MapController extends Controller
         $delivery = Delivery::find($id);
         return response()->json(['latitude' => $delivery->lat, 'longitude' => $delivery->lng]);
     }
-}
+}    

@@ -62,12 +62,12 @@
                     _token: '{{ csrf_token() }}',
                     address: address,
                     lat: latlng.lat,
-                    lng: latlng.lng ,
+                    lng: latlng.lng,
                     status: 'in_process'
                 })
                 .done(function(data) {
                     console.log('Address saved:', data);
-                    fetchOrders(); // Обновление таблицы заказов после сохранения адреса
+                    window.location.href = `/user-map/${data.deliveryId}`; // Редирект на страницу карты пользователя
                 })
                 .fail(function(jqXHR, textStatus, errorThrown) {
                     console.error('Error saving address:', textStatus, errorThrown);
@@ -75,39 +75,6 @@
                 });
             }
         }
-
-        $(document).ready(function() {
-            setInterval(function() {
-                var orderId = $('#orderId').val();
-                if (orderId) {
-                    updateMapWithDeliveryMarker(orderId);
-                }
-            }, 15000); // Обновление каждые 15 секунд
-        });
-
-        function updateMapWithDeliveryMarker(id) {
-            $.get(`/get-delivery-coordinates/${id}`, function(data) {
-                if (deliveryMarker) {
-                    map.removeLayer(deliveryMarker);
-                }
-                deliveryMarker = L.marker([data.latitude, data.longitude]).addTo(map);
-                if (routingControl) {
-                    routingControl.setWaypoints([
-                        L.latLng(data.latitude, data.longitude),
-                        L.latLng(marker.getLatLng().lat, marker.getLatLng().lng)
-                    ]);
-                } else {
-                    routingControl = L.Routing.control({
-                        waypoints: [
-                            L.latLng(data.latitude, data.longitude),
-                            L.latLng(marker.getLatLng().lat, marker.getLatLng().lng)
-                        ],
-                        routeWhileDragging: true
-                    }).addTo(map);
-                }
-            });
-        }
-
     </script>
 </body>
 </html>

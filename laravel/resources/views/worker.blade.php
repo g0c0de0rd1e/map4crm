@@ -102,7 +102,7 @@
         }
 
         function sendCourierCoordinates(orderId, lat, lng) {
-            $.post(`/save-courier-coordinates`, {
+            $.post('/save-courier-coordinates', {
                 _token: '{{ csrf_token() }}',
                 orderId: orderId,
                 lat: lat,
@@ -116,6 +116,20 @@
                 console.error('Response:', jqXHR.responseText);
             });
         }
+
+        $(document).ready(function() {
+            fetchOrders();
+            setInterval(function() {
+                var orderId = $('#orderId').val();
+                if (orderId) {
+                    getCourierLocation(function(lat, lng) {
+                        if (lat && lng) {
+                            sendCourierCoordinates(orderId, lat, lng);
+                        }
+                    });
+                }
+            }, 15000); // Обновление каждые 15 секунд
+        });
 
         function getNextStatus(currentStatus) {
             switch (currentStatus) {
