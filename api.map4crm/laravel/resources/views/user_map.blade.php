@@ -10,6 +10,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
+    <style>
+        .leaflet-routing-container {
+            display: none;
+        }
+    </style>
+
     <div id="map" style="width: 100%; height: 500px;"></div>
 
     <script>
@@ -29,9 +35,13 @@
         map.on('click', function(e) {
             return false;
         });
-
         function updateMapWithDeliveryMarker(id) {
-            $.get(`/get-delivery-coordinates/${id}`, function(data) {
+            $.get(`/get-delivery-coordinates/${id}`, function(data, status) {
+                if (status === '204') {
+                    console.log('Order completed or coordinates unchanged');
+                    return;
+                }
+
                 // Проверяем, что координаты курьера отличаются от координат пользователя
                 if (data.latitude !== {{ $delivery->lat }} || data.longitude !== {{ $delivery->lng }}) {
                     if (deliveryMarker) {
@@ -50,10 +60,13 @@
                                 L.latLng({{ $delivery->lat }}, {{ $delivery->lng }})
                             ],
                             routeWhileDragging: true,
-                            createMarker: function() { return null; } // Убираем маркеры маршрута
+                            createMarker: function() { return null; }, // Убираем маркеры маршрута
                         }).addTo(map);
                     }
                 }
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.error('Error fetching delivery coordinates:', textStatus, errorThrown);
+                console.error('Response:', jqXHR.responseText);
             });
         }
 
@@ -65,6 +78,7 @@
                 updateMapWithDeliveryMarker({{ $delivery->id }});
             }, 15000); // Обновление каждые 15 секунд
         });
+
     </script>
 </body>
 </html>

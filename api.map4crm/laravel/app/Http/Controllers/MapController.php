@@ -170,7 +170,38 @@ class MapController extends Controller
     
     public function getDeliveryCoordinates($id)
     {
-        $delivery = Delivery::find($id);
-        return response()->json(['latitude' => $delivery->lat, 'longitude' => $delivery->lng]);
-    }
+        try {
+            $delivery = Delivery::find($id);
+    
+            if (!$delivery) {
+                \Log::error("Delivery not found for ID: $id");
+                return response()->json(['message' => 'Delivery not found'], 404);
+            }
+    
+            // Проверка статуса заказа
+            if ($delivery->status === 'received') {
+                return response()->json(['message' => 'Order completed'], 204);
+            }
+    
+            // Проверка изменения координат
+            $lastLat = session("delivery_{$id}_lat");
+            $lastLng = session("delivery_{$id}_lng");
+    
+            if ($lastLat == $delivery->lat && $lastLng == $delivery->lng) {
+                return response()->json(['message' => 'Coordinates unchanged'], 204);
+            }
+    
+            // Сохранение новых координат в сессии
+            session(["delivery_{$id}_lat" => $delivery->lat]);
+            session(["delivery_{$id}_lng" => $delivery->lng]);
+    
+            return response()->json(['latitude' => $delivery->lat, 'longitude' => $delivery->lng]);
+        } catch (\Exception $e) {
+            \Log::error('Error in getDeliveryCoordinates: ' . $e->getMessage(), [
+                'exception' => $e,
+                'delivery_id' => $id
+            ]);
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }    
 }    
