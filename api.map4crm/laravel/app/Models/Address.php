@@ -9,5 +9,10 @@ class Address extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['address', 'latitude', 'longitude', 'user_id'];
+    protected $fillable = ['address', 'latitude', 'longitude', 'user_id', 'order_id'];
+
+    public function delivery()
+    {
+        return $this->belongsTo(Delivery::class, 'order_id');
+    }
 }

@@ -24,7 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/save-courier-coordinates', [MapController::class, 'saveCourierCoordinates']);
     Route::get('/user-map/{id}', [MapController::class, 'showUserMap'])->name('user.map');
     Route::get('/delivery-location/{id}', [MapController::class, 'getDeliveryLocation']);
-    Route::get('/get-user-location', [MapController::class, 'getUserLocation']);
+    Route::get('/get-user-location-by-order/{orderId}', [MapController::class, 'getUserLocationByOrderId']);
 });
 
 require __DIR__.'/auth.php';

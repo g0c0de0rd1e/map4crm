@@ -35,50 +35,48 @@
         map.on('click', function(e) {
             return false;
         });
-        function updateMapWithDeliveryMarker(id) {
-            $.get(`/get-delivery-coordinates/${id}`, function(data, status) {
-                if (status === '204') {
-                    console.log('Order completed or coordinates unchanged');
-                    return;
-                }
 
-                // Проверяем, что координаты курьера отличаются от координат пользователя
-                if (data.latitude !== {{ $delivery->lat }} || data.longitude !== {{ $delivery->lng }}) {
+        function updateCourierMarker(orderId) {
+            $.get(`/get-delivery-coordinates/${orderId}`)
+                .done(function(deliveryCoordinates) {
+                    console.log('Delivery Coordinates:', deliveryCoordinates);
+
                     if (deliveryMarker) {
-                        map.removeLayer(deliveryMarker);
+                        deliveryMarker.setLatLng([deliveryCoordinates.latitude, deliveryCoordinates.longitude]);
+                    } else {
+                        deliveryMarker = L.marker([deliveryCoordinates.latitude, deliveryCoordinates.longitude]).addTo(map).bindPopup("Courier Location").openPopup();
                     }
-                    deliveryMarker = L.marker([data.latitude, data.longitude]).addTo(map).bindPopup("Courier Location").openPopup();
+
                     if (routingControl) {
                         routingControl.setWaypoints([
-                            L.latLng(data.latitude, data.longitude),
+                            L.latLng(deliveryCoordinates.latitude, deliveryCoordinates.longitude),
                             L.latLng({{ $delivery->lat }}, {{ $delivery->lng }})
                         ]);
                     } else {
                         routingControl = L.Routing.control({
                             waypoints: [
-                                L.latLng(data.latitude, data.longitude),
+                                L.latLng(deliveryCoordinates.latitude, deliveryCoordinates.longitude),
                                 L.latLng({{ $delivery->lat }}, {{ $delivery->lng }})
                             ],
                             routeWhileDragging: true,
                             createMarker: function() { return null; }, // Убираем маркеры маршрута
                         }).addTo(map);
                     }
-                }
-            }).fail(function(jqXHR, textStatus, errorThrown) {
-                console.error('Error fetching delivery coordinates:', textStatus, errorThrown);
-                console.error('Response:', jqXHR.responseText);
-            });
+                })
+                .fail(function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching delivery coordinates:', textStatus, errorThrown);
+                    console.error('Response:', jqXHR.responseText);
+                });
         }
 
         $(document).ready(function() {
-            // Загрузка меток при загрузке страницы
-            updateMapWithDeliveryMarker({{ $delivery->id }});
+            // Загрузка метки курьера при загрузке страницы
+            updateCourierMarker({{ $delivery->id }});
 
             setInterval(function() {
-                updateMapWithDeliveryMarker({{ $delivery->id }});
+                updateCourierMarker({{ $delivery->id }});
             }, 15000); // Обновление каждые 15 секунд
         });
-
     </script>
 </body>
 </html>

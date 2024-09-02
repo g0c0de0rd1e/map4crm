@@ -27,17 +27,25 @@ class MapController extends Controller
             $delivery->address = $request->input('address');
             $delivery->lat = $request->input('lat');
             $delivery->lng = $request->input('lng');
-            $delivery->status = $request->input('status'); // Добавлено поле status
+            $delivery->status = $request->input('status');
             $delivery->save();
-    
+
+            $address = new Address();
+            $address->address = $request->input('address');
+            $address->latitude = $request->input('lat');
+            $address->longitude = $request->input('lng');
+            $address->user_id = auth()->id();
+            $address->order_id = $delivery->id; // Сохраняем номер заказа
+            $address->save();
+
             return response()->json(['deliveryId' => $delivery->id]);
-    
+
         } catch (\Exception $e) {
             \Log::error('Error saving address: ' . $e->getMessage(), [
                 'exception' => $e,
                 'request' => $request->all()
             ]);
-    
+
             return response()->json(['message' => 'Error saving address'], 500);
         }
     }
@@ -104,21 +112,18 @@ class MapController extends Controller
         ]);
     }
 
-    public function getUserLocation()
+    public function getUserLocationByOrderId($orderId)
     {
-        if (!auth()->check()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        $address = Address::where('order_id', $orderId)->first();
 
-        $userAddress = Address::where('user_id', auth()->id())->first();
-
-        if (!$userAddress) {
-            return response()->json(['error' => 'User address not found'], 404);
+        if (!$address) {
+            \Log::error("Address not found for order ID: $orderId");
+            return response()->json(['error' => 'Address not found'], 404);
         }
 
         return response()->json([
-            'lat' => $userAddress->latitude,
-            'lng' => $userAddress->longitude
+            'lat' => $address->latitude,
+            'lng' => $address->longitude
         ]);
     }
 
@@ -172,29 +177,29 @@ class MapController extends Controller
     {
         try {
             $delivery = Delivery::find($id);
-    
+
             if (!$delivery) {
                 \Log::error("Delivery not found for ID: $id");
                 return response()->json(['message' => 'Delivery not found'], 404);
             }
-    
+
             // Проверка статуса заказа
             if ($delivery->status === 'received') {
                 return response()->json(['message' => 'Order completed'], 204);
             }
-    
+
             // Проверка изменения координат
             $lastLat = session("delivery_{$id}_lat");
             $lastLng = session("delivery_{$id}_lng");
-    
+
             if ($lastLat == $delivery->lat && $lastLng == $delivery->lng) {
                 return response()->json(['message' => 'Coordinates unchanged'], 204);
             }
-    
+
             // Сохранение новых координат в сессии
             session(["delivery_{$id}_lat" => $delivery->lat]);
             session(["delivery_{$id}_lng" => $delivery->lng]);
-    
+
             return response()->json(['latitude' => $delivery->lat, 'longitude' => $delivery->lng]);
         } catch (\Exception $e) {
             \Log::error('Error in getDeliveryCoordinates: ' . $e->getMessage(), [
@@ -203,5 +208,6 @@ class MapController extends Controller
             ]);
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
-    }    
+    }
+
 }    
