@@ -55,12 +55,6 @@ class MapController extends Controller
         $delivery = Delivery::find($id);
         return view('user_map', ['delivery' => $delivery]);
     }
-    
-    public function getUserAddresses()
-    {
-        $addresses = Delivery::where('user_id', auth()->id())->get();
-        return response()->json($addresses);
-    }
 
     public function updateAddressStatus(Request $request, $id)
     {
@@ -99,16 +93,6 @@ class MapController extends Controller
                 'lat' => $userAddress->latitude,
                 'lng' => $userAddress->longitude
             ]
-        ]);
-    }
-
-    public function getDeliveryLocation($id)
-    {
-        $delivery = Delivery::find($id);
-
-        return response()->json([
-            'lat' => $delivery->latitude,
-            'lng' => $delivery->longitude
         ]);
     }
 
