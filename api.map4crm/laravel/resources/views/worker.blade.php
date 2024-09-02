@@ -27,11 +27,11 @@
             }
         });
 
-        function fetchOrders() {
-            $.get('/get-orders', function(data) {
-                displayOrders(data);
-            });
-        }
+        // function fetchOrders() {
+        //     $.get('/get-orders', function(data) {
+        //         displayOrders(data);
+        //     });
+        // }
         
         function getCourierLocation(callback) {
             if (navigator.geolocation) {
@@ -73,32 +73,6 @@
                     $('#orderId').val(order.id); // Устанавливаем ID заказа, который в пути
                 }
             });
-        }
-
-        function updateOrderStatus(id, status) {
-            if (status === 'delete') {
-                $.ajax({
-                    url: `/delete-order/${id}`,
-                    type: 'DELETE',
-                    success: function(result) {
-                        fetchOrders();
-                    }
-                });
-            } else {
-                getCourierLocation(function(lat, lng) {
-                    if (lat && lng) {
-                        $.post(`/update-order-status/${id}`, { status: status, lat: lat, lng: lng }, function(data) {
-                            fetchOrders();
-                            if (status === 'on_the_way') {
-                                $('#orderId').val(id); // Устанавливаем ID заказа
-                                updateMapWithDeliveryMarker(id);
-                            }
-                        });
-                    } else {
-                        console.error('Unable to get courier location.');
-                    }
-                });
-            }
         }
 
         function sendCourierCoordinates(orderId, lat, lng) {
@@ -145,8 +119,17 @@
         }
 
         $(document).ready(function() {
-            fetchOrders();
-            setInterval(fetchOrders, 5000); // Обновление заказов каждые 5 секунд
+            var eventSource = new EventSource('/get-orders');
+
+            eventSource.onmessage = function(event) {
+                var orders = JSON.parse(event.data);
+                displayOrders(orders);
+            };
+
+            eventSource.onerror = function(event) {
+                console.error('EventSource failed:', event);
+                eventSource.close();
+            };
         });
     </script>
 </head>

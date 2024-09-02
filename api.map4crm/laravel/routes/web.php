@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\MapController;
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,7 +14,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/map', [MapController::class, 'showMap']);
     Route::get('/worker', [MapController::class, 'showWorker']);
-    Route::get('/get-orders', [MapController::class, 'getOrders']);
+    Route::get('/get-orders', [MapController::class, 'streamOrders']);
     Route::get('/user-addresses', [MapController::class, 'getUserAddresses']);
     Route::post('/update-order-status/{id}', [MapController::class, 'updateOrderStatus']);
     Route::get('/get-delivery-coordinates/{id}', [MapController::class, 'getDeliveryCoordinates']);

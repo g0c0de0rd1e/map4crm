@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redis;
 use App\Models\Address;
 use App\Models\Delivery;
 
@@ -121,10 +122,21 @@ class MapController extends Controller
         ]);
     }
 
-    public function getOrders()
+    public function streamOrders()
     {
-        $orders = Delivery::where('user_id', auth()->id())->get()->toArray();
-        return response()->json($orders);
+        return response()->stream(function () {
+            while (true) {
+                $orders = Delivery::where('user_id', auth()->id())->get();
+                echo "data: " . json_encode($orders) . "\n\n";
+                ob_flush();
+                flush();
+                sleep(5); 
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'Connection' => 'keep-alive',
+        ]);
     }
 
     public function updateOrderStatus(Request $request, $id)
